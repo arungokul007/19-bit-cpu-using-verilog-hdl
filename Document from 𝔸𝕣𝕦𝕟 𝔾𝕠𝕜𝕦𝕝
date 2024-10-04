@@ -1,0 +1,63 @@
+module SimpleCPU (
+    input clk,
+    input [18:0] instruction,
+    output reg [18:0] result,
+    output reg zero_flag
+);
+
+    // ALU Module
+    reg [18:0] alu_out;
+    reg is_zero;
+
+    always @(*) begin
+        case (instruction[18:14]) // opcode field
+            5'b00000: alu_out = result + result; // Example: ADD (modify for actual operands)
+            5'b00001: alu_out = result - result; // Example: SUB
+            5'b00010: alu_out = result * result; // Example: MUL
+            5'b00011: alu_out = result / result; // Example: DIV
+            5'b00100: alu_out = result + 1;       // INC
+            5'b00101: alu_out = result - 1;       // DEC
+            5'b00110: alu_out = result & result; // AND
+            5'b00111: alu_out = result | result; // OR
+            5'b01000: alu_out = result ^ result; // XOR
+            5'b01001: alu_out = ~result;          // NOT
+            default: alu_out = 19'b0;
+        endcase
+        is_zero = (alu_out == 19'b0) ? 1'b1 : 1'b0; // Set zero flag
+    end
+
+    // Register File Module
+    reg [18:0] reg_file [0:7]; // 8 registers, 19 bits each
+
+    always @(posedge clk) begin
+        if (instruction[4]) // Example write enable bit
+            reg_file[instruction[13:11]] <= alu_out; // Write back to register
+    end
+
+    // Read from registers
+    wire [18:0] src1_data = reg_file[instruction[10:8]];
+    wire [18:0] src2_data = reg_file[instruction[7:5]];
+
+    // Control Logic
+    always @(*) begin
+        case (instruction[18:14])
+            5'b00000: result = src1_data + src2_data; // ADD
+            5'b00001: result = src1_data - src2_data; // SUB
+            5'b00010: result = src1_data * src2_data; // MUL
+            5'b00011: result = src1_data / src2_data; // DIV
+            5'b00100: result = src1_data + 1;          // INC
+            5'b00101: result = src1_data - 1;          // DEC
+            5'b00110: result = src1_data & src2_data; // AND
+            5'b00111: result = src1_data | src2_data; // OR
+            5'b01000: result = src1_data ^ src2_data; // XOR
+            5'b01001: result = ~src1_data;              // NOT
+            default: result = 19'b0;
+        endcase
+    end
+
+    // Set zero_flag based on the result
+    always @(result) begin
+        zero_flag = (result == 19'b0) ? 1'b1 : 1'b0;
+    end
+
+endmodule
